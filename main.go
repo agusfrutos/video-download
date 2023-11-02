@@ -2,54 +2,39 @@ package main
 
 import (
 	"fmt"
-	"io"
+	"html/template"
+	"log"
 	"net/http"
-	"os"
-	"os/exec"
 )
 
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "POST" {
-			url := r.FormValue("url")
-			cmd := exec.Command("youtube-dl", "-x", "--audio-format", "mp3", url)
-			stdout, err := cmd.StdoutPipe()
-			if err != nil {
-				fmt.Fprintln(w, err)
-				return
-			}
-			if err := cmd.Start(); err != nil {
-				fmt.Fprintln(w, err)
-				return
-			}
-			if _, err := io.Copy(os.Stdout, stdout); err != nil {
-				fmt.Fprintln(w, err)
-				return
-			}
-			if err := cmd.Wait(); err != nil {
-				fmt.Fprintln(w, err)
-				return
-			}
-		}
-		fmt.Fprintf(w, `
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Descargador de videos en línea</title>
-    <script src="https://unpkg.com/htmx.org/dist/htmx.js"></script>
-</head>
-<body>
-    <h1>Descargador de videos en línea</h1>
-    <form hx-post="/" hx-target="#result">
-        <label for="url">URL del video:</label><br>
-        <input type="text" id="url" name="url"><br><br>
-        <button type="submit">Descargar</button>
-    </form>
-    <div id="result"></div>
-</body>
-</html>
-`)
-	})
+	http.HandleFunc("/", startHandler)
+	http.HandleFunc("/fmt", testHandler)
+	fmt.Printf("Listening on port 3000\n")
+	log.Fatal(http.ListenAndServe("localhost:3000", nil))
+}
 
-	http.ListenAndServe(":8080", nil)
+func startHandler(w http.ResponseWriter, r *http.Request) {
+	check := func(err error) {
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+	index := "index.html"
+
+	tmpl, err := template.ParseFiles(index)
+	check(err)
+
+	// inicio, err := os.ReadFile("index.html")
+	check(err)
+
+	// t, err := template.New("inicio").Parse(home)
+	// check(err)
+
+	tmpl.Execute(w, nil)
+
+}
+
+func testHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Print("get realizado")
 }
